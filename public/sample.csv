@@ -1,0 +1,12 @@
+employee_id,name,role,hourly_rate,hours_worked,output_score,team
+1,John Smith,Developer,50,40,85,Engineering
+2,Jane Doe,Designer,45,35,90,Design
+3,Bob Johnson,Manager,60,45,75,Management
+4,Alice Williams,Developer,52,42,88,Engineering
+5,Charlie Brown,Designer,48,38,92,Design
+6,Diana Prince,Manager,65,40,70,Management
+7,Edward Norton,Developer,55,44,82,Engineering
+8,Fiona Green,Designer,46,36,89,Design
+9,George Miller,Manager,62,43,73,Management
+10,Hannah White,Developer,53,41,87,Engineering
+
