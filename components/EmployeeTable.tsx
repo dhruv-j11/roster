@@ -21,40 +21,40 @@ export default function EmployeeTable({ employees }: EmployeeTableProps) {
   };
 
   return (
-    <div className="rounded-xl bg-slate-900/70 backdrop-blur-sm border border-slate-700 overflow-hidden">
+    <div className="rounded-xl bg-gray-900/70 backdrop-blur-sm border border-gray-800 overflow-hidden hover-glow">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-slate-800/50 border-b border-slate-700">
+          <thead className="bg-gray-800/50 border-b border-gray-700">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Team
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Efficiency
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Status
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-gray-800">
             {employees.map((employee) => (
               <tr
                 key={employee.employee_id}
-                className="hover:bg-slate-800/30 transition-colors"
+                className="hover:bg-gray-800/30 transition-colors"
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-white">{employee.name}</div>
-                  <div className="text-sm text-slate-500">{employee.role}</div>
+                  <div className="text-sm text-gray-500">{employee.role}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-slate-300">{employee.team}</div>
+                  <div className="text-sm text-gray-300">{employee.team}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-slate-300">
+                  <div className="text-sm text-gray-300">
                     {(employee.efficiency || 0).toFixed(2)}
                   </div>
                 </td>

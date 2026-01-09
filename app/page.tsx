@@ -7,29 +7,50 @@ import KPICards from '@/components/KPICards';
 import EmployeeTable from '@/components/EmployeeTable';
 import TeamChart from '@/components/TeamChart';
 import RecommendationsPanel from '@/components/RecommendationsPanel';
+import ExecutiveSummaryModal from '@/components/ExecutiveSummaryModal';
+import ScenarioSimulator from '@/components/ScenarioSimulator';
+import SmartRanking from '@/components/SmartRanking';
+import Navbar from '@/components/Navbar';
+import ScrollNavigation from '@/components/ScrollNavigation';
+import { downloadCSV, downloadPDFReport } from '@/lib/exportUtils';
 import { ProcessedData } from '@/lib/types';
 
 export default function Home() {
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
+  const [isExecutiveModalOpen, setIsExecutiveModalOpen] = useState(false);
 
   const handleDataProcessed = (data: ProcessedData) => {
     setProcessedData(data);
   };
 
+  const sections = processedData
+    ? [
+        { id: 'kpis', label: 'KPIs' },
+        { id: 'rankings', label: 'Rankings' },
+        { id: 'employees', label: 'Employees' },
+        { id: 'team-chart', label: 'Team Chart' },
+        { id: 'scenario-simulator', label: 'Simulator' },
+      ]
+    : [];
+
   return (
     <main className="min-h-screen relative">
       <ParticleBackground />
+      <Navbar hasData={!!processedData} />
+      {processedData && <ScrollNavigation sections={sections} />}
       
       <div className="relative z-10 container mx-auto px-4 py-8 md:py-12">
         {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            Roster
-          </h1>
-          <p className="text-xl text-slate-400 font-garamond">
-            Workforce Optimization Dashboard
-          </p>
-        </div>
+        {!processedData && (
+          <div className="mb-12 text-center">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-[#00f0ff] via-[#00a0ff] to-[#00f0ff] bg-clip-text text-transparent">
+              Roster
+            </h1>
+            <p className="text-xl text-gray-400 font-garamond">
+              Workforce Optimization Dashboard
+            </p>
+          </div>
+        )}
 
         {/* CSV Upload Section */}
         <div className="mb-12">
@@ -39,16 +60,43 @@ export default function Home() {
         {/* Dashboard Content */}
         {processedData && (
           <div className="space-y-8 animate-fadeIn">
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-4 justify-center">
+              <button
+                onClick={() => setIsExecutiveModalOpen(true)}
+                className="px-6 py-3 bg-[#00f0ff]/20 border-2 border-[#00f0ff] text-[#00f0ff] font-semibold rounded-lg hover:bg-[#00f0ff]/30 hover-lift transition-all"
+              >
+                Generate Executive Report
+              </button>
+              <button
+                onClick={() => downloadPDFReport(processedData)}
+                className="px-6 py-3 bg-gray-800 border-2 border-gray-700 text-white font-semibold rounded-lg hover:border-[#00f0ff] hover-lift transition-all"
+              >
+                Download PDF Report
+              </button>
+              <button
+                onClick={() => downloadCSV(processedData)}
+                className="px-6 py-3 bg-gray-800 border-2 border-gray-700 text-white font-semibold rounded-lg hover:border-[#00f0ff] hover-lift transition-all"
+              >
+                Download Analyzed CSV
+              </button>
+            </div>
+
             {/* KPI Cards */}
-            <KPICards data={processedData} />
+            <div id="kpis">
+              <KPICards data={processedData} />
+            </div>
+
+            {/* Smart Ranking */}
+            <SmartRanking employees={processedData.employees} />
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="employees">
               {/* Employee Table - Takes 2 columns */}
               <div className="lg:col-span-2">
                 <div className="mb-4">
                   <h2 className="text-2xl font-semibold text-white">Employees</h2>
-                  <p className="text-slate-400 mt-1">
+                  <p className="text-gray-400 mt-1">
                     {processedData.employees.length} employees analyzed
                   </p>
                 </div>
@@ -62,10 +110,24 @@ export default function Home() {
             </div>
 
             {/* Team Chart */}
-            <div>
+            <div id="team-chart">
               <TeamChart teamMetrics={processedData.teamMetrics} />
             </div>
+
+            {/* [Beta] Scenario Simulator */}
+            <div>
+              <ScenarioSimulator originalData={processedData} />
+            </div>
           </div>
+        )}
+
+        {/* Executive Summary Modal */}
+        {processedData && (
+          <ExecutiveSummaryModal
+            data={processedData}
+            isOpen={isExecutiveModalOpen}
+            onClose={() => setIsExecutiveModalOpen(false)}
+          />
         )}
 
         {/* Empty State */}
@@ -87,10 +149,10 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-slate-400 mb-2">
+              <h2 className="text-2xl font-semibold text-gray-400 mb-2">
                 Upload Your CSV to Get Started
               </h2>
-              <p className="text-slate-500">
+              <p className="text-gray-500">
                 Analyze your workforce data and receive actionable insights
               </p>
             </div>

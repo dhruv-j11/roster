@@ -61,16 +61,16 @@ export default function KPICards({ data }: KPICardsProps) {
       {cards.map((card, index) => (
         <div
           key={index}
-          className="relative overflow-hidden rounded-xl bg-slate-900/70 backdrop-blur-sm border border-slate-700 p-6 hover:border-slate-600 transition-all duration-300"
+          className="relative overflow-hidden rounded-xl bg-gray-900/70 backdrop-blur-sm border border-gray-800 p-6 hover-lift hover-glow"
         >
           <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-10`} />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
-              <div className={card.iconColor}>
+              <div className="text-[#00f0ff]">
                 {card.icon}
               </div>
             </div>
-            <h3 className="text-slate-400 text-sm font-medium mb-1">{card.title}</h3>
+            <h3 className="text-gray-400 text-sm font-medium mb-1">{card.title}</h3>
             <p className="text-3xl font-bold text-white">{card.value}</p>
           </div>
         </div>

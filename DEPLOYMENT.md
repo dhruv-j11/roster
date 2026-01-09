@@ -39,7 +39,7 @@ git init
 
 ```bash
 git add .
-git commit -m "Initial commit: Roster workforce optimization dashboard"
+git commit -m "init commit"
 ```
 
 ### Step 4: Add GitHub Remote

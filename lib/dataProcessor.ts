@@ -137,33 +137,50 @@ function generateRecommendations(
 ): string[] {
   const recommendations: string[] = [];
 
-  // Find overworked and underused employees
-  const overworked = employees.filter((e) => e.status === 'Overworked');
-  const underused = employees.filter((e) => e.status === 'Underused');
+  // Calculate overall averages
+  const overallAvgCostEfficiency = employees.reduce(
+    (sum, e) => sum + (e.cost_efficiency || 0),
+    0
+  ) / employees.length;
+  const overallAvgHours = employees.reduce(
+    (sum, e) => sum + e.hours_worked,
+    0
+  ) / employees.length;
 
-  // Recommend shifting hours
-  if (overworked.length > 0 && underused.length > 0) {
-    const overworkedEmp = overworked[0];
-    const underusedEmp = underused[0];
-    const teamAvg = teamMetrics.find((t) => t.team === overworkedEmp.team);
-    if (teamAvg) {
-      const avgHours = employees
-        .filter((e) => e.team === overworkedEmp.team)
-        .reduce((sum, e) => sum + e.hours_worked, 0) / 
-        employees.filter((e) => e.team === overworkedEmp.team).length;
-      const hoursToShift = Math.min(
-        Math.max(1, Math.floor((overworkedEmp.hours_worked - avgHours) / 2)),
-        5
+  // 1. Overworked/Underused Employee Workload Balancing (Multiple pairs)
+  const overworked = employees.filter((e) => e.status === 'Overworked').sort(
+    (a, b) => (b.hours_worked || 0) - (a.hours_worked || 0)
+  );
+  const underused = employees.filter((e) => e.status === 'Underused').sort(
+    (a, b) => (a.hours_worked || 0) - (b.hours_worked || 0)
+  );
+
+  // Generate multiple workload rebalancing recommendations
+  for (let i = 0; i < Math.min(overworked.length, underused.length, 3); i++) {
+    const overworkedEmp = overworked[i];
+    const underusedEmp = underused[i];
+    const teamAvg = employees
+      .filter((e) => e.team === overworkedEmp.team)
+      .reduce((sum, e) => sum + e.hours_worked, 0) / 
+      employees.filter((e) => e.team === overworkedEmp.team).length;
+    
+    const hoursToShift = Math.min(
+      Math.max(1, Math.floor((overworkedEmp.hours_worked - teamAvg) / 2)),
+      8
+    );
+    
+    if (hoursToShift > 0 && overworkedEmp.team === underusedEmp.team) {
+      recommendations.push(
+        `Redistribute ${hoursToShift} hours from ${overworkedEmp.name} to ${underusedEmp.name} (same team)`
       );
-      if (hoursToShift > 0) {
-        recommendations.push(
-          `Shift ${hoursToShift} hours from ${overworkedEmp.name} to ${underusedEmp.name}`
-        );
-      }
+    } else if (hoursToShift > 0) {
+      recommendations.push(
+        `Consider transferring ${hoursToShift} hours from ${overworkedEmp.name} (${overworkedEmp.team}) to ${underusedEmp.name} (${underusedEmp.team})`
+      );
     }
   }
 
-  // Team budget recommendations
+  // 2. Team Budget & Cost Efficiency Analysis
   teamMetrics.forEach((team) => {
     const teamEmployees = employees.filter((e) => e.team === team.team);
     if (teamEmployees.length === 0) return;
@@ -172,35 +189,176 @@ function generateRecommendations(
       (sum, e) => sum + (e.cost_efficiency || 0),
       0
     ) / teamEmployees.length;
-    const overallAvgCostEfficiency = employees.reduce(
-      (sum, e) => sum + (e.cost_efficiency || 0),
+    const teamAvgHours = teamEmployees.reduce(
+      (sum, e) => sum + e.hours_worked,
       0
-    ) / employees.length;
+    ) / teamEmployees.length;
 
-    if (avgCostEfficiency < overallAvgCostEfficiency * 0.8) {
+    if (avgCostEfficiency < overallAvgCostEfficiency * 0.75) {
+      const savings = team.totalCost - (team.totalOutput / overallAvgCostEfficiency);
       recommendations.push(
-        `Team ${team.team} is over budget for its output`
+        `Team ${team.team}: ${((overallAvgCostEfficiency / avgCostEfficiency - 1) * 100).toFixed(0)}% below avg cost efficiency - potential savings: $${Math.round(savings)}`
+      );
+    }
+
+    if (team.avgEfficiency < avgEfficiency * 0.85) {
+      recommendations.push(
+        `Team ${team.team} efficiency ${((team.avgEfficiency / avgEfficiency) * 100).toFixed(0)}% below average - review processes or training needs`
+      );
+    }
+
+    // Team workload analysis
+    if (teamAvgHours > overallAvgHours * 1.2) {
+      recommendations.push(
+        `Team ${team.team} averaging ${teamAvgHours.toFixed(1)} hrs/week (${((teamAvgHours / overallAvgHours - 1) * 100).toFixed(0)}% above average) - risk of burnout`
+      );
+    } else if (teamAvgHours < overallAvgHours * 0.8) {
+      recommendations.push(
+        `Team ${team.team} underutilized at ${teamAvgHours.toFixed(1)} hrs/week - consider increasing capacity`
       );
     }
   });
 
-  // Individual employee recommendations
-  const inefficient = employees.filter((e) => e.status === 'Inefficient');
-  inefficient.slice(0, 3).forEach((emp) => {
+  // 3. High-Performing Employees (Top Performers)
+  const topPerformers = [...employees]
+    .sort((a, b) => (b.efficiency || 0) - (a.efficiency || 0))
+    .slice(0, 3);
+  
+  topPerformers.forEach((emp, idx) => {
+    if (emp.efficiency && emp.efficiency > avgEfficiency * 1.3) {
+      recommendations.push(
+        `${emp.name} (${emp.team}) is a top performer (${((emp.efficiency / avgEfficiency) * 100).toFixed(0)}% above avg) - consider mentoring or leadership role`
+      );
+    }
+  });
+
+  // 4. Inefficient Employees (Bottom Performers - More detailed)
+  const inefficient = employees
+    .filter((e) => e.status === 'Inefficient')
+    .sort((a, b) => (a.cost_efficiency || 0) - (b.cost_efficiency || 0));
+  
+  inefficient.slice(0, 5).forEach((emp) => {
+    const costImpact = emp.hourly_rate * emp.hours_worked;
+    const efficiencyRatio = emp.efficiency ? (emp.efficiency / avgEfficiency) : 0;
+    
     recommendations.push(
-      `${emp.name} is high cost, low return (cost efficiency: ${(emp.cost_efficiency || 0).toFixed(2)})`
+      `${emp.name} (${emp.team}): Cost efficiency ${((emp.cost_efficiency || 0) / overallAvgCostEfficiency * 100).toFixed(0)}% of average - costs $${Math.round(costImpact)}/week for ${emp.output_score} output`
     );
   });
 
-  // Team efficiency recommendations
-  teamMetrics.forEach((team) => {
-    if (team.avgEfficiency < avgEfficiency * 0.9) {
+  // 5. Role-Based Recommendations
+  const roleGroups = new Map<string, Employee[]>();
+  employees.forEach((emp) => {
+    if (!roleGroups.has(emp.role)) {
+      roleGroups.set(emp.role, []);
+    }
+    roleGroups.get(emp.role)!.push(emp);
+  });
+
+  roleGroups.forEach((roleEmployees, role) => {
+    if (roleEmployees.length < 2) return;
+    
+    const roleAvgEfficiency = roleEmployees.reduce(
+      (sum, e) => sum + (e.efficiency || 0),
+      0
+    ) / roleEmployees.length;
+    const roleAvgCost = roleEmployees.reduce(
+      (sum, e) => sum + (e.hourly_rate * e.hours_worked),
+      0
+    ) / roleEmployees.length;
+
+    if (roleAvgEfficiency < avgEfficiency * 0.9) {
       recommendations.push(
-        `Team ${team.team} efficiency is ${((team.avgEfficiency / avgEfficiency) * 100).toFixed(0)}% of average - consider optimization`
+        `${role} role performing ${((roleAvgEfficiency / avgEfficiency) * 100).toFixed(0)}% below company average - review role expectations or training`
       );
     }
   });
 
-  return recommendations.slice(0, 10); // Limit to 10 recommendations
+  // 6. Cost Optimization Opportunities
+  const highCostLowOutput = [...employees]
+    .filter((e) => {
+      const cost = e.hourly_rate * e.hours_worked;
+      const avgCost = totalCost / employees.length;
+      return cost > avgCost * 1.2 && e.output_score < totalOutput / employees.length * 0.9;
+    })
+    .sort((a, b) => {
+      const costA = a.hourly_rate * a.hours_worked;
+      const costB = b.hourly_rate * b.hours_worked;
+      return costB - costA;
+    })
+    .slice(0, 3);
+
+  highCostLowOutput.forEach((emp) => {
+    const cost = emp.hourly_rate * emp.hours_worked;
+    const avgCost = totalCost / employees.length;
+    recommendations.push(
+      `${emp.name} costs $${Math.round(cost)}/week but output ${((emp.output_score / (totalOutput / employees.length)) * 100).toFixed(0)}% of average - review role or performance`
+    );
+  });
+
+  // 7. Best Value Employees (Cost Efficient)
+  const bestValue = [...employees]
+    .sort((a, b) => (b.cost_efficiency || 0) - (a.cost_efficiency || 0))
+    .slice(0, 3);
+
+  bestValue.forEach((emp) => {
+    if ((emp.cost_efficiency || 0) > overallAvgCostEfficiency * 1.2) {
+      recommendations.push(
+        `${emp.name} provides exceptional value (${((emp.cost_efficiency || 0) / overallAvgCostEfficiency * 100).toFixed(0)}% above avg cost efficiency) - consider scaling similar roles`
+      );
+    }
+  });
+
+  // 8. Team Size Optimization
+  teamMetrics.forEach((team) => {
+    const teamEmployees = employees.filter((e) => e.team === team.team);
+    const avgTeamSize = employees.length / teamMetrics.length;
+    
+    if (team.employeeCount > avgTeamSize * 1.5) {
+      recommendations.push(
+        `Team ${team.team} has ${team.employeeCount} members (${((team.employeeCount / avgTeamSize - 1) * 100).toFixed(0)}% above avg) - consider if team size is optimal`
+      );
+    } else if (team.employeeCount < avgTeamSize * 0.7 && team.avgEfficiency < avgEfficiency * 0.95) {
+      recommendations.push(
+        `Team ${team.team} may be understaffed (${team.employeeCount} members) with below-average efficiency - consider adding capacity`
+      );
+    }
+  });
+
+  // 9. Cross-Team Resource Allocation
+  const teamsByEfficiency = [...teamMetrics].sort((a, b) => b.avgEfficiency - a.avgEfficiency);
+  const mostEfficientTeam = teamsByEfficiency[0];
+  const leastEfficientTeam = teamsByEfficiency[teamsByEfficiency.length - 1];
+
+  if (mostEfficientTeam && leastEfficientTeam && mostEfficientTeam.team !== leastEfficientTeam.team) {
+    const efficiencyGap = mostEfficientTeam.avgEfficiency / leastEfficientTeam.avgEfficiency;
+    if (efficiencyGap > 1.3) {
+      recommendations.push(
+        `Consider cross-training: ${mostEfficientTeam.team} (${((efficiencyGap - 1) * 100).toFixed(0)}% more efficient) could mentor ${leastEfficientTeam.team}`
+      );
+    }
+  }
+
+  // 10. Overall Company Health Insights
+  const efficiencyVariation = employees.reduce((sum, e) => {
+    const diff = Math.abs((e.efficiency || 0) - avgEfficiency);
+    return sum + diff;
+  }, 0) / employees.length;
+
+  if (efficiencyVariation > avgEfficiency * 0.4) {
+    recommendations.push(
+      `High efficiency variance detected (${(efficiencyVariation / avgEfficiency * 100).toFixed(0)}% variation) - consider standardized processes or training programs`
+    );
+  }
+
+  const costEfficiencyRatio = totalOutput / totalCost;
+  const idealRatio = avgEfficiency * 0.8; // Rough estimate
+  if (costEfficiencyRatio < idealRatio) {
+    recommendations.push(
+      `Company-wide cost efficiency below optimal - focus on improving output per dollar spent through process optimization or skill development`
+    );
+  }
+
+  return recommendations; // Return all recommendations (no limit)
 }
 

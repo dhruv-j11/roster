@@ -26,8 +26,8 @@ export default function ParticleBackground() {
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
-    const color1 = new THREE.Color(0x4a9eff);
-    const color2 = new THREE.Color(0x8b5cf6);
+    const color1 = new THREE.Color(0x00f0ff); // Neon blue
+    const color2 = new THREE.Color(0x00a0ff); // Lighter neon blue
 
     for (let i = 0; i < particleCount; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 2000;
@@ -49,10 +49,10 @@ export default function ParticleBackground() {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 2,
+      size: 5.8, // Increased by ~40% (2 * 1.4 = 2.8)
       vertexColors: true,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.7,
       blending: THREE.AdditiveBlending,
     });
 
@@ -115,7 +115,7 @@ export default function ParticleBackground() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 -z-10 opacity-30"
+      className="fixed inset-0 -z-10 opacity-50"
       style={{ pointerEvents: 'none' }}
     />
   );

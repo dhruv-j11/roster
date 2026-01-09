@@ -49,7 +49,7 @@ export default function CSVUpload({ onDataProcessed }: CSVUploadProps) {
 
   return (
     <div className="w-full">
-      <div className="relative border-2 border-dashed border-slate-600 rounded-lg p-8 hover:border-slate-500 transition-colors bg-slate-900/50 backdrop-blur-sm">
+      <div className="relative border-2 border-dashed border-gray-700 rounded-lg p-8 hover:border-[#00f0ff] transition-colors bg-gray-900/50 backdrop-blur-sm hover-glow">
         <input
           ref={fileInputRef}
           type="file"
@@ -61,13 +61,13 @@ export default function CSVUpload({ onDataProcessed }: CSVUploadProps) {
         <div className="text-center">
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="text-slate-400">Processing CSV...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00f0ff]"></div>
+              <p className="text-gray-400">Processing CSV...</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
               <svg
-                className="w-12 h-12 text-slate-400"
+                className="w-12 h-12 text-[#00f0ff]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -79,10 +79,10 @@ export default function CSVUpload({ onDataProcessed }: CSVUploadProps) {
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              <p className="text-slate-300 font-medium">
+              <p className="text-gray-300 font-medium">
                 Click to upload CSV or drag and drop
               </p>
-              <p className="text-slate-500 text-sm">
+              <p className="text-gray-500 text-sm">
                 CSV with: employee_id, name, role, hourly_rate, hours_worked, output_score, team
               </p>
             </div>
